@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
 using NotesApp.API.Entities;
@@ -6,9 +7,11 @@ using NotesApp.API.Models;
 using NotesApp.API.Services;
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace NotesApp.API.Controllers
 {
+    [Authorize]
     [ApiController]
     [Route("api/users/{userId}/notes")]
     public class NoteController : ControllerBase
@@ -22,41 +25,42 @@ namespace NotesApp.API.Controllers
             _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
         }
 
+        [Authorize]
         [HttpGet()]
-        public ActionResult<IEnumerable<NoteDto>> GetNotesForUser(Guid userId)
+        public async Task<ActionResult<IEnumerable<NoteDto>>> GetNotesForUser(Guid userId)
         {
-            if (!_userRepository.UserExists(userId))
+            if (!await _userRepository.UserExistsAsync(userId))
             {
                 return NotFound();
             }
 
-            var notesForUser = _userRepository.GetNotes(userId);
+            var notesForUser = _userRepository.GetNotesAsync(userId).Result;
             return Ok(_mapper.Map<IEnumerable<NoteDto>>(notesForUser));
         }
 
         [HttpGet("{noteId}", Name = "GetNoteForUser")]
-        public ActionResult<NoteDto> GetNoteForUser(Guid userId, Guid noteId)
+        public async Task<ActionResult<NoteDto>> GetNoteForUser(Guid userId, Guid noteId)
         {
-            if (!_userRepository.UserExists(userId))
+            if (!await _userRepository.UserExistsAsync(userId))
             {
                 return NotFound();
             }
 
-            var noteForId = _userRepository.GetNote(noteId);
+            var noteForId = await _userRepository.GetNoteAsync(noteId);
             return Ok(_mapper.Map<NoteDto>(noteForId));
         }
 
         [HttpPost]
-        public ActionResult<NoteDto> CreateNoteForUser(Guid userId, NoteForCreationDto note)
+        public async Task<ActionResult<NoteDto>> CreateNoteForUserAsync(Guid userId, NoteForCreationDto note)
         {
-            if (!_userRepository.UserExists(userId))
+            if (!await _userRepository.UserExistsAsync(userId))
             {
                 return NotFound();
             }
 
             var noteEntity = _mapper.Map<Note>(note);
             _userRepository.AddNote(noteEntity, userId);
-            _userRepository.Save();
+            await _userRepository.SaveAsync();
 
             var noteToReturn = _mapper.Map<NoteDto>(noteEntity);
 
@@ -67,14 +71,14 @@ namespace NotesApp.API.Controllers
 
         //TODO return GETNoteForUser
         [HttpDelete("{noteId}")]
-        public ActionResult DeleteNoteForUser(Guid noteId, Guid userId)
+        public async Task<ActionResult> DeleteNoteForUser(Guid noteId, Guid userId)
         {
-            if (!_userRepository.UserExists(userId))
+            if (!await _userRepository.UserExistsAsync(userId))
             {
                 return NotFound();
             }
 
-            var noteForUser = _userRepository.GetNote(noteId, userId);
+            var noteForUser = await _userRepository.GetNoteAsync(noteId, userId);
 
             if (noteForUser == null)
             {
@@ -82,62 +86,62 @@ namespace NotesApp.API.Controllers
             }
 
             _userRepository.DeleteNote(noteForUser);
-            _userRepository.Save();
+            await _userRepository.SaveAsync();
 
             return NoContent();
         }
 
         [HttpPatch("{noteId}/color")]
-        public ActionResult ChangeNoteColor(Guid noteId, Guid userId, JsonPatchDocument<NoteForCreationDto> patchDocument)
+        public async Task<ActionResult> ChangeNoteColor(Guid noteId, Guid userId, JsonPatchDocument<NoteForCreationDto> patchDocument)
         {
             if (noteId == Guid.Empty)
             {
                 return BadRequest("Wrong note id");
             }
 
-            if (!_userRepository.UserExists(userId))
+            if (!await _userRepository.UserExistsAsync(userId))
             {
                 return NotFound("nesto");
             }
 
-            return UpdateNote(noteId, userId, patchDocument);
+            return UpdateNote(noteId, userId, patchDocument).Result;
         }
 
         [HttpPatch("{noteId}/title")]
-        public ActionResult ChangeNoteTitle(Guid noteId, Guid userId, JsonPatchDocument<NoteForCreationDto> patchDocument)
+        public async Task<ActionResult> ChangeNoteTitle(Guid noteId, Guid userId, JsonPatchDocument<NoteForCreationDto> patchDocument)
         {
             if (noteId == Guid.Empty)
             {
                 return BadRequest("Wrong note id");
             }
 
-            if(!_userRepository.UserExists(userId))
+            if(!await _userRepository.UserExistsAsync(userId))
             {
                 return NotFound("No user");
             }
 
-            return UpdateNote(noteId, userId, patchDocument);
+            return UpdateNote(noteId, userId, patchDocument).Result;
         }
 
         [HttpPatch("{noteId}/content")]
-        public ActionResult ChangeNoteContent(Guid noteId, Guid userId, JsonPatchDocument<NoteForCreationDto> patchDocument)
+        public async Task<ActionResult> ChangeNoteContent(Guid noteId, Guid userId, JsonPatchDocument<NoteForCreationDto> patchDocument)
         {
             if (noteId == Guid.Empty)
             {
                 return BadRequest("Note does not exist.");
             }
 
-            if (!_userRepository.UserExists(userId))
+            if (!await _userRepository.UserExistsAsync(userId))
             {
                 return NotFound("No user with this id.");
             }
 
-            return UpdateNote(noteId, userId, patchDocument);
+            return await UpdateNote(noteId, userId, patchDocument);
         }
 
-        private ActionResult UpdateNote(Guid noteId, Guid userId, JsonPatchDocument<NoteForCreationDto> patchDocument)
+        private async Task<ActionResult> UpdateNote(Guid noteId, Guid userId, JsonPatchDocument<NoteForCreationDto> patchDocument)
         {
-            var noteFromRepo = _userRepository.GetNote(noteId, userId);
+            var noteFromRepo = await _userRepository.GetNoteAsync(noteId, userId);
             //ako nema pravimo ga
             if (noteFromRepo == null)
             {
@@ -148,7 +152,7 @@ namespace NotesApp.API.Controllers
                 noteToAdd.NoteId = noteId;
 
                 _userRepository.AddNote(noteToAdd, userId);
-                _userRepository.Save();
+                await _userRepository.SaveAsync();
 
                 var noteToReturn = _mapper.Map<NoteDto>(noteToAdd);
                 return CreatedAtRoute("GetNoteForUser",
@@ -161,7 +165,7 @@ namespace NotesApp.API.Controllers
 
             _mapper.Map(noteToPatch, noteFromRepo);
             _userRepository.UpdateNote(noteFromRepo);
-            _userRepository.Save();
+            await _userRepository.SaveAsync();
 
             return NoContent();
         }

@@ -1,0 +1,21 @@
+﻿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
+em8148.note.net
+u30621714.wl215.sendgrid.net
+Expected CNAME for "em2428.note.net" to match "u30621714.wl215.sendgrid.net".
+=============================================
+Mail Trap : 87caf9ee6358020990285a39aa16921a
+
+CNAME GYzYuqdf8KtogsshNWdZzFKP.noteapp.com -> smtp.mailtrap.live
+TXT noteapp.com -> v=spf1 include:_spf.google.com include:amazonses.com include:_spf.smtp.mailtrap.live ~all
+CNAME rwmt1._domainkey.noteapp.com -> rwmt1.dkim.smtp.mailtrap.live
+CNAME rwmt2._domainkey.noteapp.com -> rwmt2.dkim.smtp.mailtrap.live
+TXT _dmarc.noteapp.com -> v=DMARC1; p=none; rua=mailto:dmarc@smtp.mailtrap.live; ruf=mailto:dmarc@smtp.mailtrap.live; rf=afrf; pct=100
+
+var client = new RestClient("https://send.api.mailtrap.io/api/send");
+client.Timeout = -1;
+var request = new RestRequest(Method.POST);
+request.AddHeader("Authorization", "Bearer f41eea25e7c565c6303c6f6e7da1f072");
+request.AddHeader("Content-Type", "application/json");
+request.AddParameter("application/json", "{\"from\":{\"email\":\"mailtrap@noteapp.com\",\"name\":\"Mailtrap Test\"},\"to\":[{\"email\":\"knikola234@gmail.com\"}],\"subject\":\"You are awesome!\",\"text\":\"Congrats for sending test email with Mailtrap!\",\"category\":\"Integration Test\"}", ParameterType.RequestBody);
+IRestResponse response = client.Execute(request);
+Console.WriteLine(response.Content);

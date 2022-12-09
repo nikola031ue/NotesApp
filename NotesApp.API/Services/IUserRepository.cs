@@ -2,24 +2,26 @@
 using NotesApp.API.ResourceParameters;
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace NotesApp.API.Services
 {
     public interface IUserRepository
     {
-        IEnumerable<Note> GetNotes(Guid userId);
-        Note GetNote(Guid noteId);
-        Note GetNote(Guid noteId, Guid userId);
+        Task<IEnumerable<Note>> GetNotesAsync(Guid userId);
+        Task<Note> GetNoteAsync(Guid noteId);
+        Task<Note> GetNoteAsync(Guid noteId, Guid userId);
         void AddNote(Note note, Guid userId);
         void DeleteNote(Note note);
         void UpdateNote(Note note);
-        User GetUser(string Email, string Password);
+        Task<User> GetUserAsync(string Email, string Password);
         User GetUser(UserResourceParameters userResource);
-        User GetUser(Guid userId); 
+        Task<User> GetUserAsync(Guid userId); 
         void AddUser(User user);
         void DeleteUser(User user, bool isLogged);
         void UpdateUser(User user);
+        Task<bool> UserExistsAsync(Guid userId);
         bool UserExists(Guid userId);
-        bool Save();
+        Task SaveAsync();
     }
 }

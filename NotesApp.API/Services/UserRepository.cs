@@ -1,9 +1,11 @@
-﻿using NotesApp.API.Contexts;
+﻿using Microsoft.EntityFrameworkCore;
+using NotesApp.API.Contexts;
 using NotesApp.API.Entities;
 using NotesApp.API.ResourceParameters;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace NotesApp.API.Services
 {
@@ -60,17 +62,17 @@ namespace NotesApp.API.Services
             }
         }
 
-        public Note GetNote(Guid noteId)
+        public async Task<Note> GetNoteAsync(Guid noteId)
         {
             if (noteId == Guid.Empty)
             {
                 throw new ArgumentNullException(nameof(noteId));
             }
 
-            return _context.Notes.Where(a => a.NoteId == noteId).FirstOrDefault();
+            return await _context.Notes.Where(a => a.NoteId == noteId).FirstOrDefaultAsync();
         }
 
-        public Note GetNote(Guid noteId, Guid userId)
+        public async Task<Note> GetNoteAsync(Guid noteId, Guid userId)
         {
             if (noteId == Guid.Empty)
             {
@@ -82,22 +84,22 @@ namespace NotesApp.API.Services
                 throw new ArgumentNullException(nameof(userId));
             }
 
-            return _context.Notes.Where(a => a.UserId == userId && a.NoteId == noteId).FirstOrDefault();
+            return await _context.Notes.Where(a => a.UserId == userId && a.NoteId == noteId).FirstOrDefaultAsync();
         }
 
-        public IEnumerable<Note> GetNotes(Guid userId)
+        public async Task<IEnumerable<Note>> GetNotesAsync(Guid userId)
         {
             if (userId == Guid.Empty)
             {
                 throw new ArgumentNullException(nameof(userId));
             }
 
-            return _context.Notes
+            return await _context.Notes
                 .Where(n => n.UserId == userId)
-                .OrderBy(n => n.Title).ToList();
+                .OrderBy(n => n.Title).ToListAsync();
         }
 
-        public User GetUser(string Email, string Password)
+        public async Task<User> GetUserAsync(string Email, string Password)
         {
             if (Email == null)
             {
@@ -108,19 +110,19 @@ namespace NotesApp.API.Services
                 throw new ArgumentNullException(nameof(Password));
             }
 
-            return _context.Users
-                .FirstOrDefault(u => u.Email == Email && u.Password == Password);
+            return await _context.Users
+                .FirstOrDefaultAsync(u => u.Email == Email && u.Password == Password);
         }
 
-        public User GetUser(Guid userId)
+        public async Task<User> GetUserAsync(Guid userId)
         {
             if (userId == Guid.Empty)
             {
                 throw new ArgumentNullException(nameof(userId));
             }
 
-            return _context.Users
-                .FirstOrDefault(u => u.UserId == userId);
+            return await _context.Users
+                .FirstOrDefaultAsync(u => u.UserId == userId);
 
         }
 
@@ -137,7 +139,7 @@ namespace NotesApp.API.Services
                 throw new Exception("Please fill the box.");
             }
 
-            var collection = _context.Users as IEnumerable<User>;
+            var collection =  _context.Users as IEnumerable<User>;
 
 
             if (!string.IsNullOrWhiteSpace(userResource.Email) && !string.IsNullOrWhiteSpace(userResource.Password))
@@ -150,7 +152,7 @@ namespace NotesApp.API.Services
                     && a.Password.Equals(password, StringComparison.Ordinal)
                 );
 
-                return collection != null ? collection.First() : null;
+                return collection != null ? collection.FirstOrDefault() : null;
             }
             return null;
         }
@@ -174,6 +176,16 @@ namespace NotesApp.API.Services
         {
         }
 
+        public async Task<bool> UserExistsAsync(Guid userId)
+        {
+            if (userId == Guid.Empty)
+            {
+                throw new ArgumentNullException(nameof(userId));
+            }
+
+            return await _context.Users.AnyAsync(a => a.UserId == userId);
+        }
+
         public bool UserExists(Guid userId)
         {
             if (userId == Guid.Empty)
@@ -183,10 +195,10 @@ namespace NotesApp.API.Services
 
             return _context.Users.Any(a => a.UserId == userId);
         }
-        
-        public bool Save()
+
+        public async Task SaveAsync()
         {
-            return (_context.SaveChanges() >= 0);
+            await _context.SaveChangesAsync();
         }
 
         public void Dispose()

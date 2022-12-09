@@ -11,5 +11,9 @@ namespace NotesApp.API.Entities
         public Guid VerificationId { get; set; }
 
         public int VerificationCode { get; set; }
+
+        [ForeignKey("UserId")]
+        public Guid UserId { get; set; }
+        public User User { get; set; }
     }
 }

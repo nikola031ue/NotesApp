@@ -104,11 +104,40 @@ namespace NotesApp.API.Migrations
                         });
                 });
 
+            modelBuilder.Entity("NotesApp.API.Entities.Verification", b =>
+                {
+                    b.Property<Guid>("VerificationId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("VerificationCode")
+                        .HasColumnType("int");
+
+                    b.HasKey("VerificationId");
+
+                    b.HasIndex("UserId")
+                        .IsUnique();
+
+                    b.ToTable("Verification");
+                });
+
             modelBuilder.Entity("NotesApp.API.Entities.Note", b =>
                 {
                     b.HasOne("NotesApp.API.Entities.User", "User")
                         .WithMany("Notes")
                         .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("NotesApp.API.Entities.Verification", b =>
+                {
+                    b.HasOne("NotesApp.API.Entities.User", "User")
+                        .WithOne("Verification")
+                        .HasForeignKey("NotesApp.API.Entities.Verification", "UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

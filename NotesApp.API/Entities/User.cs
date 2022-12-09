@@ -32,5 +32,7 @@ namespace NotesApp.API.Entities
 
         public ICollection<Note> Notes { get; set; } = new List<Note>();
 
+        public Verification Verification { get; set; }
+
     }
 }
