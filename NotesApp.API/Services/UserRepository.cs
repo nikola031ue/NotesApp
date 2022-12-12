@@ -31,7 +31,7 @@ namespace NotesApp.API.Services
             }
 
             note.UserId = userId;
-            _context.Notes.Add(note);
+            _context.Notes.AddAsync(note);
         }
 
         public void DeleteNote(Note note)
@@ -44,7 +44,6 @@ namespace NotesApp.API.Services
             _context.Notes.Remove(note);
         }
 
-        //TODO mozda moze bolje
         public void DeleteUser(User user, bool isLogged)
         {
             if (user == null)
@@ -85,6 +84,12 @@ namespace NotesApp.API.Services
             }
 
             return await _context.Notes.Where(a => a.UserId == userId && a.NoteId == noteId).FirstOrDefaultAsync();
+        }
+
+        public async Task<IEnumerable<User>> GetUsersAsync()
+        {
+            return await _context.Users
+                .OrderBy(n => n.Email).ToListAsync();
         }
 
         public async Task<IEnumerable<Note>> GetNotesAsync(Guid userId)
@@ -157,7 +162,7 @@ namespace NotesApp.API.Services
             return null;
         }
         
-        public void AddUser(User user)
+        public async Task AddUser(User user)
         {
             if (user == null)
             {
@@ -165,7 +170,35 @@ namespace NotesApp.API.Services
             }
             user.UserId = new Guid();
 
-            _context.Users.Add(user);
+            await _context.Users.AddAsync(user);
+        }
+
+        public void AddVerification(Verification verification, Guid userId)
+        {
+            if (verification == null)
+            {
+                throw new ArgumentNullException(nameof(verification));
+            }
+
+            if (userId == Guid.Empty)
+            {
+                throw new ArgumentNullException(nameof(userId));
+            }
+
+            verification.UserId = userId;
+            verification.VerificationId = new Guid();
+
+            _context.Verifications.Add(verification);
+        }
+
+        public async Task<Verification> GetVerificationAsync(Guid userId)
+        {
+            if (userId == Guid.Empty)
+            {
+                throw new ArgumentNullException(nameof(userId));
+            }
+
+            return await _context.Verifications.Where(a => a.UserId == userId).FirstOrDefaultAsync();
         }
 
         public void UpdateNote(Note note)

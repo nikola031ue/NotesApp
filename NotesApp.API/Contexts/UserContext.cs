@@ -8,6 +8,7 @@ namespace NotesApp.API.Contexts
     {
         public DbSet<User> Users { get; set; }
         public DbSet<Note> Notes { get; set; }
+        public DbSet<Verification> Verifications { get; set; }
 
         public UserContext(DbContextOptions<UserContext> options) : base(options)
         {

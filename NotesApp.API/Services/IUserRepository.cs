@@ -11,13 +11,16 @@ namespace NotesApp.API.Services
         Task<IEnumerable<Note>> GetNotesAsync(Guid userId);
         Task<Note> GetNoteAsync(Guid noteId);
         Task<Note> GetNoteAsync(Guid noteId, Guid userId);
+        Task<IEnumerable<User>> GetUsersAsync();
         void AddNote(Note note, Guid userId);
         void DeleteNote(Note note);
         void UpdateNote(Note note);
         Task<User> GetUserAsync(string Email, string Password);
         User GetUser(UserResourceParameters userResource);
         Task<User> GetUserAsync(Guid userId); 
-        void AddUser(User user);
+        Task AddUser(User user);
+        void AddVerification(Verification verification, Guid userId);
+        Task<Verification> GetVerificationAsync(Guid userId);
         void DeleteUser(User user, bool isLogged);
         void UpdateUser(User user);
         Task<bool> UserExistsAsync(Guid userId);

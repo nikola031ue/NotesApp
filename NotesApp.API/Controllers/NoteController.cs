@@ -31,7 +31,7 @@ namespace NotesApp.API.Controllers
         {
             if (!await _userRepository.UserExistsAsync(userId))
             {
-                return NotFound();
+                return NotFound("User does not registered.");
             }
 
             var notesForUser = _userRepository.GetNotesAsync(userId).Result;
@@ -43,7 +43,7 @@ namespace NotesApp.API.Controllers
         {
             if (!await _userRepository.UserExistsAsync(userId))
             {
-                return NotFound();
+                return NotFound("User does not registered.");
             }
 
             var noteForId = await _userRepository.GetNoteAsync(noteId);
@@ -55,7 +55,7 @@ namespace NotesApp.API.Controllers
         {
             if (!await _userRepository.UserExistsAsync(userId))
             {
-                return NotFound();
+                return NotFound("User does not registered.");
             }
 
             var noteEntity = _mapper.Map<Note>(note);
@@ -69,26 +69,25 @@ namespace NotesApp.API.Controllers
                 noteToReturn);
         }
 
-        //TODO return GETNoteForUser
         [HttpDelete("{noteId}")]
         public async Task<ActionResult> DeleteNoteForUser(Guid noteId, Guid userId)
         {
             if (!await _userRepository.UserExistsAsync(userId))
             {
-                return NotFound();
+                return NotFound("User does not registered.");
             }
 
             var noteForUser = await _userRepository.GetNoteAsync(noteId, userId);
 
             if (noteForUser == null)
             {
-                return NotFound();
+                return Ok("User do not have any notes.");
             }
 
             _userRepository.DeleteNote(noteForUser);
             await _userRepository.SaveAsync();
 
-            return NoContent();
+            return Ok("Deleted successfully.");
         }
 
         [HttpPatch("{noteId}/color")]
@@ -101,7 +100,7 @@ namespace NotesApp.API.Controllers
 
             if (!await _userRepository.UserExistsAsync(userId))
             {
-                return NotFound("nesto");
+                return NotFound("User does not registered.");
             }
 
             return UpdateNote(noteId, userId, patchDocument).Result;
@@ -117,7 +116,7 @@ namespace NotesApp.API.Controllers
 
             if(!await _userRepository.UserExistsAsync(userId))
             {
-                return NotFound("No user");
+                return NotFound("User does not registered.");
             }
 
             return UpdateNote(noteId, userId, patchDocument).Result;
@@ -133,7 +132,7 @@ namespace NotesApp.API.Controllers
 
             if (!await _userRepository.UserExistsAsync(userId))
             {
-                return NotFound("No user with this id.");
+                return NotFound("User does not registered.");
             }
 
             return await UpdateNote(noteId, userId, patchDocument);
@@ -167,7 +166,7 @@ namespace NotesApp.API.Controllers
             _userRepository.UpdateNote(noteFromRepo);
             await _userRepository.SaveAsync();
 
-            return NoContent();
+            return Ok("Note successfully edited.");
         }
     }
 }

@@ -52,7 +52,8 @@ namespace NotesApp.API
                     IssuerSigningKey = new SymmetricSecurityKey(keyBytes),
                     ValidateLifetime = true,
                     ValidateAudience = false,
-                    ValidateIssuer = false
+                    ValidateIssuer = false,
+                    
                 };
             });
 

@@ -2,12 +2,14 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore.Internal;
 using NotesApp.API.Entities;
 using NotesApp.API.Helpers;
 using NotesApp.API.Models;
 using NotesApp.API.ResourceParameters;
 using NotesApp.API.Services;
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace NotesApp.API.Controllers
@@ -30,11 +32,11 @@ namespace NotesApp.API.Controllers
         }
 
         [HttpGet("{userId}", Name = "GetUser")]
-        public ActionResult GetUser(Guid userId)
+        public async Task<ActionResult> GetUserAsync(Guid userId)
         {
             if (userId == Guid.Empty) return NotFound();
 
-            var user = _userRepository.GetUserAsync(userId).Result;
+            var user = await _userRepository.GetUserAsync(userId);
 
             if (user == null) return NotFound();
 
@@ -46,12 +48,12 @@ namespace NotesApp.API.Controllers
         {
             if (userResourceParameters == null)
             {
-                return NotFound();
+                return BadRequest("Fill in all the fields.");
             }
 
             if (string.IsNullOrWhiteSpace(userResourceParameters.Email) || string.IsNullOrWhiteSpace(userResourceParameters.Password))
             {
-                return NotFound("Prazno");
+                return BadRequest("Email or password are empty.");
             }
 
             if (!MailValidator.IsValidEmail(userResourceParameters.Email))
@@ -60,46 +62,46 @@ namespace NotesApp.API.Controllers
             }
 
             var userFromRepo = _userRepository.GetUser(userResourceParameters);
+           
             var token = _jwtTokenManager.Authenticate(userResourceParameters.Email, userResourceParameters.Password);
-            if(string.IsNullOrEmpty(token))
+            if (string.IsNullOrEmpty(token))
             {
-                return Unauthorized();
+                return Unauthorized("Token error.");
             }
 
-            if(userFromRepo != null)
+            if (userFromRepo != null)
             {
                 await _mailService.SendEmailAsync(userFromRepo.Email,
                     "New Login", "<h1>New login</h1>");
                 //return Ok(_mapper.Map<UserDto>(userFromRepo));
                 return Ok(token);
-            } 
+            }
             else
             {
-                return Ok("Ne postoji korisnik");
+                return NoContent();
             }
         }
 
         [AllowAnonymous]
         [HttpPost]
-        public ActionResult<UserDto> CreateUser(UserForCreationDto user)
+        public async Task<ActionResult<UserDto>> CreateUserAsync(UserForCreationDto user)
         {
-            return CreatorOfUser(user);
+            return await CreatorOfUserAsync(user);
         }
 
         [AllowAnonymous]
         [HttpPost("{generate}")]
-        public ActionResult<UserDto> CreateUserWithGeneratePassword(UserForCreationDto user)
+        public async Task<ActionResult<UserDto>> CreateUserWithGeneratePasswordAsync(UserForCreationDto user)
         {
             string password = PasswordGenerator.GetRandomPassword();
 
             user.Password = password;
-            return CreatorOfUser(user);
+            return await CreatorOfUserAsync(user);
         }
 
-        // TODO Token auth
-        // https://bitoftech.net/2014/06/01/token-based-authentication-asp-net-web-api-2-owin-asp-net-identity/
-        [HttpDelete("{userId}")]
-        public ActionResult DeleteUser(Guid userId)
+        [Authorize]
+        [HttpPost("{userId}/verification", Name ="UserVerification")]
+        public async Task<ActionResult> UserVerification(Guid userId)
         {
             if (userId == Guid.Empty)
             {
@@ -108,16 +110,69 @@ namespace NotesApp.API.Controllers
 
             if (!_userRepository.UserExists(userId))
             {
-                return NotFound();
+                return NotFound("User does not exist.");
             }
 
-            var userForDelete = _userRepository.GetUserAsync(userId).Result;
-            _userRepository.DeleteUser(userForDelete, true);
-            _userRepository.SaveAsync();
+            Verification userVerification = new Verification();
+            userVerification.VerificationCode = GenerateVerificationCode();
 
-            return NoContent();
+            _userRepository.AddVerification(userVerification, userId);
+            await _userRepository.SaveAsync();
+
+            return Ok(userVerification);
         }
 
+        [Authorize]
+        [HttpDelete("{userId}")]
+        public async Task<ActionResult> DeleteUserAsync(Guid userId)
+        {
+            if (userId == Guid.Empty)
+            {
+                return BadRequest("No user id.");
+            }
+
+            if (!_userRepository.UserExists(userId))
+            {
+                return NotFound("User does not exist.");
+            }
+
+            var userForDelete = await _userRepository.GetUserAsync(userId);
+            _userRepository.DeleteUser(userForDelete, true);
+            await _userRepository.SaveAsync();
+
+            return Ok("Deleted successfully.");
+        }
+
+        [Authorize]
+        [HttpPatch("{userId}/verify/{code}")]
+        public async Task<ActionResult> Verified(int code, Guid userId, JsonPatchDocument<UserForCreationDto> patchDocument)
+        {
+            if (!await _userRepository.UserExistsAsync(userId))
+            {
+                return NotFound("User is not registered.");
+            }
+
+            var userFromRepo = await _userRepository.GetUserAsync(userId);
+            var verificationFromRepo = await _userRepository.GetVerificationAsync(userId);
+
+            
+            if(code == verificationFromRepo.VerificationCode)
+            {
+                userFromRepo.Verified = true;
+                var userToPatch = _mapper.Map<UserForCreationDto>(userFromRepo);
+                patchDocument.ApplyTo(userToPatch);
+
+                _mapper.Map(userToPatch, userFromRepo);
+                _userRepository.UpdateUser(userFromRepo);
+                await _userRepository.SaveAsync();
+
+                return Ok("User verifier successfully.");
+            }
+
+            return BadRequest("User can not be verified.");
+        }
+
+        [Authorize]
         [HttpPatch("{userId}/password")]
         public async Task<ActionResult> ChangeUserPassword(Guid userId, JsonPatchDocument<UserForCreationDto> patchDocument)
         {
@@ -135,27 +190,41 @@ namespace NotesApp.API.Controllers
             _userRepository.UpdateUser(userFromRepo);
             await _userRepository.SaveAsync();
 
-            return NoContent();
+            return Ok("Successfully changed the password.");
         }
 
-        private ActionResult<UserDto> CreatorOfUser(UserForCreationDto user)
+        private int GenerateVerificationCode()
+        {
+            Random generator = new Random();
+            int number = generator.Next(1000000);
+            return number;
+        }
+
+        private async Task<ActionResult<UserDto>> CreatorOfUserAsync(UserForCreationDto user)
         {
             if (!MailValidator.IsValidEmail(user.Email))
             {
                 return BadRequest("Wrong email format.");
             }
 
+            var usersFromRepo = await _userRepository.GetUsersAsync();
+
+            if(usersFromRepo.Any(x => x.Email.Equals(user.Email)))
+            {
+                return BadRequest("Email already exist.");
+            }
 
             user.Password = user.Password;
 
             var userEntity = _mapper.Map<User>(user);
-            _userRepository.AddUser(userEntity);
-            _userRepository.SaveAsync();
+            await _userRepository.AddUser(userEntity);
+            await _userRepository.SaveAsync();
 
             var userToReturn = _mapper.Map<UserDto>(userEntity);
             return CreatedAtRoute("GetUser",
                 new { userId = userToReturn.Id },
                 userToReturn);
+
         }
     }
 }
