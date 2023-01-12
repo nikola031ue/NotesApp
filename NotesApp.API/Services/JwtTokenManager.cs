@@ -22,13 +22,13 @@ namespace NotesApp.API.Services
             _context = context;
         }
 
-        public string Authenticate(string email, string password)
+        public string Authenticate(string email/*, string password*/)
         {
 
 
-            if (!_context.Users.Any(x => x.Email.Equals(email) && x.Password.Equals(password)))
+            if (!_context.Users.Any(x => x.Email.Equals(email)/* && x.Password.Equals(password)*/))
             {
-                return null;
+                throw new ArgumentNullException();
             }
 
             var key = _configuration.GetValue<string>("JwtConfig:Key");

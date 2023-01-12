@@ -25,138 +25,174 @@ namespace NotesApp.API.Controllers
             _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
         }
 
-        [Authorize]
         [HttpGet()]
         public async Task<ActionResult<IEnumerable<NoteDto>>> GetNotesForUser(Guid userId)
         {
-            if (!await _userRepository.UserExistsAsync(userId))
+            try
             {
-                return NotFound("User does not registered.");
-            }
+                if (!await _userRepository.UserExistsAsync(userId))
+                {
+                    return NotFound("User does not registered.");
+                }
 
-            var notesForUser = _userRepository.GetNotesAsync(userId).Result;
-            return Ok(_mapper.Map<IEnumerable<NoteDto>>(notesForUser));
+                var notesForUser = _userRepository.GetNotesAsync(userId).Result;
+                return Ok(_mapper.Map<IEnumerable<NoteDto>>(notesForUser));
+            }
+            catch (ArgumentNullException)
+            {
+                return BadRequest("The id does not exist or is in a bad format.");
+            }
         }
 
         [HttpGet("{noteId}", Name = "GetNoteForUser")]
         public async Task<ActionResult<NoteDto>> GetNoteForUser(Guid userId, Guid noteId)
         {
-            if (!await _userRepository.UserExistsAsync(userId))
+            try
             {
-                return NotFound("User does not registered.");
-            }
+                if (!await _userRepository.UserExistsAsync(userId))
+                {
+                    return NotFound("User does not registered.");
+                }
 
-            var noteForId = await _userRepository.GetNoteAsync(noteId);
-            return Ok(_mapper.Map<NoteDto>(noteForId));
+                var noteForId = await _userRepository.GetNoteAsync(noteId);
+                return Ok(_mapper.Map<NoteDto>(noteForId));
+            }
+            catch (ArgumentNullException)
+            {
+                return BadRequest("The id does not exist or is in a bad format.");
+            }
         }
 
         [HttpPost]
         public async Task<ActionResult<NoteDto>> CreateNoteForUserAsync(Guid userId, NoteForCreationDto note)
         {
-            if (!await _userRepository.UserExistsAsync(userId))
+            try
             {
-                return NotFound("User does not registered.");
+                if (!await _userRepository.UserExistsAsync(userId))
+                {
+                    return NotFound("User does not registered.");
+                }
+
+                var noteEntity = _mapper.Map<Note>(note);
+                _userRepository.AddNote(noteEntity, userId);
+                await _userRepository.SaveAsync();
+
+                var noteToReturn = _mapper.Map<NoteDto>(noteEntity);
+
+                return CreatedAtRoute("GetNoteForUser",
+                    new { userId = userId, noteId = noteToReturn.NoteId },
+                    noteToReturn);
             }
-
-            var noteEntity = _mapper.Map<Note>(note);
-            _userRepository.AddNote(noteEntity, userId);
-            await _userRepository.SaveAsync();
-
-            var noteToReturn = _mapper.Map<NoteDto>(noteEntity);
-
-            return CreatedAtRoute("GetNoteForUser",
-                new { userId = userId, noteId = noteToReturn.NoteId },
-                noteToReturn);
+            catch (ArgumentNullException)
+            {
+                return BadRequest("The id does not exist or is in a bad format.");
+            }
         }
 
         [HttpDelete("{noteId}")]
         public async Task<ActionResult> DeleteNoteForUser(Guid noteId, Guid userId)
         {
-            if (!await _userRepository.UserExistsAsync(userId))
+            try
             {
-                return NotFound("User does not registered.");
+                if (!await _userRepository.UserExistsAsync(userId))
+                {
+                    return NotFound("User does not registered.");
+                }
+
+                var noteForUser = await _userRepository.GetNoteAsync(noteId, userId);
+
+                if (noteForUser == null)
+                {
+                    return Ok("User do not have any notes.");
+                }
+
+                _userRepository.DeleteNote(noteForUser);
+                await _userRepository.SaveAsync();
+
+                return Ok("Deleted successfully.");
             }
-
-            var noteForUser = await _userRepository.GetNoteAsync(noteId, userId);
-
-            if (noteForUser == null)
+            catch (ArgumentNullException)
             {
-                return Ok("User do not have any notes.");
+                return BadRequest("The id does not exist or is in a bad format.");
             }
-
-            _userRepository.DeleteNote(noteForUser);
-            await _userRepository.SaveAsync();
-
-            return Ok("Deleted successfully.");
         }
 
         [HttpPatch("{noteId}/color")]
         public async Task<ActionResult> ChangeNoteColor(Guid noteId, Guid userId, JsonPatchDocument<NoteForCreationDto> patchDocument)
         {
-            if (noteId == Guid.Empty)
+            try
             {
-                return BadRequest("Wrong note id");
-            }
+                if (noteId == Guid.Empty)
+                {
+                    return BadRequest("The note id does not exist or is in a bad format.");
+                }
 
-            if (!await _userRepository.UserExistsAsync(userId))
+                if (!await _userRepository.UserExistsAsync(userId))
+                {
+                    return NotFound("User does not registered.");
+                }
+
+                return UpdateNote(noteId, userId, patchDocument).Result;
+            }
+            catch (ArgumentNullException)
             {
-                return NotFound("User does not registered.");
+                return BadRequest("The user id does not exist or is in a bad format.");
             }
-
-            return UpdateNote(noteId, userId, patchDocument).Result;
         }
 
         [HttpPatch("{noteId}/title")]
         public async Task<ActionResult> ChangeNoteTitle(Guid noteId, Guid userId, JsonPatchDocument<NoteForCreationDto> patchDocument)
         {
-            if (noteId == Guid.Empty)
+            try
             {
-                return BadRequest("Wrong note id");
-            }
+                if (noteId == Guid.Empty)
+                {
+                    return BadRequest("The note id does not exist or is in a bad format.");
+                }
 
-            if(!await _userRepository.UserExistsAsync(userId))
+                if (!await _userRepository.UserExistsAsync(userId))
+                {
+                    return NotFound("User does not registered.");
+                }
+
+                return UpdateNote(noteId, userId, patchDocument).Result;
+            }
+            catch (ArgumentNullException)
             {
-                return NotFound("User does not registered.");
+                return BadRequest("The user id does not exist or is in a bad format.");
             }
-
-            return UpdateNote(noteId, userId, patchDocument).Result;
         }
 
         [HttpPatch("{noteId}/content")]
         public async Task<ActionResult> ChangeNoteContent(Guid noteId, Guid userId, JsonPatchDocument<NoteForCreationDto> patchDocument)
         {
-            if (noteId == Guid.Empty)
+            try
             {
-                return BadRequest("Note does not exist.");
-            }
+                if (noteId == Guid.Empty)
+                {
+                    return BadRequest("The note id does not exist or is in a bad format.");
+                }
 
-            if (!await _userRepository.UserExistsAsync(userId))
+                if (!await _userRepository.UserExistsAsync(userId))
+                {
+                    return NotFound("User does not registered.");
+                }
+
+                return UpdateNote(noteId, userId, patchDocument).Result;
+            }
+            catch (ArgumentNullException)
             {
-                return NotFound("User does not registered.");
+                return BadRequest("The user id does not exist or is in a bad format.");
             }
-
-            return await UpdateNote(noteId, userId, patchDocument);
         }
 
         private async Task<ActionResult> UpdateNote(Guid noteId, Guid userId, JsonPatchDocument<NoteForCreationDto> patchDocument)
         {
             var noteFromRepo = await _userRepository.GetNoteAsync(noteId, userId);
-            //ako nema pravimo ga
+
             if (noteFromRepo == null)
             {
-                var noteDto = new NoteForCreationDto();
-                patchDocument.ApplyTo(noteDto);
-
-                var noteToAdd = _mapper.Map<Note>(noteDto);
-                noteToAdd.NoteId = noteId;
-
-                _userRepository.AddNote(noteToAdd, userId);
-                await _userRepository.SaveAsync();
-
-                var noteToReturn = _mapper.Map<NoteDto>(noteToAdd);
-                return CreatedAtRoute("GetNoteForUser",
-                    new { userId, noteId = noteToReturn.NoteId },
-                    noteToReturn);
+                return BadRequest("Note dose not exist.");
             }
 
             var noteToPatch = _mapper.Map<NoteForCreationDto>(noteFromRepo);

@@ -12,6 +12,7 @@ using NotesApp.API.Services;
 using System;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using Newtonsoft.Json;
 
 namespace NotesApp.API
 {
@@ -27,7 +28,6 @@ namespace NotesApp.API
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddRazorPages();
             services.AddControllers(setupAction =>
             {
                 setupAction.ReturnHttpNotAcceptable = true;
@@ -36,6 +36,7 @@ namespace NotesApp.API
             {
                 setupAction.SerializerSettings.ContractResolver =
                    new CamelCasePropertyNamesContractResolver();
+                
             });
             services.AddAuthentication(authOptions =>
             {
@@ -61,10 +62,9 @@ namespace NotesApp.API
             services.AddDbContext<UserContext>(o => o.UseSqlServer(connectionString));
 
             services.AddScoped<IUserRepository, UserRepository>();
-            //Trebalo bi da bude singleton jer on ima lifetime na nivou programa a scope na nivou http requesta
             services.AddScoped(typeof(IJwtTokenManager), typeof(JwtTokenManager));
 
-            services.AddTransient<IMailService, MailService>();
+            //services.AddTransient<IMailService, MailService>();
             services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
         }
 
@@ -80,7 +80,6 @@ namespace NotesApp.API
                 app.UseExceptionHandler("/Error");
             }
 
-            app.UseStaticFiles();
 
             app.UseRouting();
             app.UseAuthentication();
@@ -89,7 +88,6 @@ namespace NotesApp.API
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
-                /*endpoints.MapRazorPages();*/
             });
         }
     }

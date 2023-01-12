@@ -1,5 +1,5 @@
 ﻿using NotesApp.API.Entities;
-using NotesApp.API.ResourceParameters;
+using NotesApp.API.Models;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -16,7 +16,7 @@ namespace NotesApp.API.Services
         void DeleteNote(Note note);
         void UpdateNote(Note note);
         Task<User> GetUserAsync(string Email, string Password);
-        User GetUser(UserResourceParameters userResource);
+        User GetUser(UserResourceParametersDto userResource);
         Task<User> GetUserAsync(Guid userId); 
         Task AddUser(User user);
         void AddVerification(Verification verification, Guid userId);

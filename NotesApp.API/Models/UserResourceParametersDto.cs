@@ -1,6 +1,6 @@
-﻿namespace NotesApp.API.ResourceParameters
+﻿namespace NotesApp.API.Models
 {
-    public class UserResourceParameters
+    public class UserResourceParametersDto
     {
         public string Email { get; set; }
         public string Password { get; set; }

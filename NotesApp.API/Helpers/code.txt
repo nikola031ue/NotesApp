@@ -1,4 +1,5 @@
 ﻿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
+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
 em8148.note.net
 u30621714.wl215.sendgrid.net
 Expected CNAME for "em2428.note.net" to match "u30621714.wl215.sendgrid.net".

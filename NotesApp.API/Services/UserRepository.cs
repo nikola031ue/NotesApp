@@ -1,7 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using NotesApp.API.Contexts;
 using NotesApp.API.Entities;
-using NotesApp.API.ResourceParameters;
+using NotesApp.API.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -131,7 +131,7 @@ namespace NotesApp.API.Services
 
         }
 
-        public User GetUser(UserResourceParameters userResource)
+        public User GetUser(UserResourceParametersDto userResource)
         {
             if (userResource == null)
             {
@@ -141,27 +141,23 @@ namespace NotesApp.API.Services
             if (string.IsNullOrWhiteSpace(userResource.Email)
                 && string.IsNullOrWhiteSpace(userResource.Password))
             {
-                throw new Exception("Please fill the box.");
+                throw new ArgumentNullException();
             }
 
-            var collection =  _context.Users as IEnumerable<User>;
+            var collection = _context.Users as IEnumerable<User>;
 
 
-            if (!string.IsNullOrWhiteSpace(userResource.Email) && !string.IsNullOrWhiteSpace(userResource.Password))
-            {
-                var mail = userResource.Email.Trim();
-                var password = userResource.Password.Trim();
+            var mail = userResource.Email.Trim();
+            var password = userResource.Password.Trim();
 
-                collection = collection.Where(a =>
-                    a.Email.Equals(mail, StringComparison.OrdinalIgnoreCase)
-                    && a.Password.Equals(password, StringComparison.Ordinal)
-                );
+            collection = collection.Where(a =>
+                a.Email.Equals(mail, StringComparison.OrdinalIgnoreCase)
+                /*&& a.Password.Equals(password, StringComparison.Ordinal)*/);
 
-                return collection != null ? collection.FirstOrDefault() : null;
-            }
-            return null;
+            return collection.FirstOrDefault();
+
         }
-        
+
         public async Task AddUser(User user)
         {
             if (user == null)

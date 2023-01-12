@@ -7,16 +7,16 @@ using System;
 
 namespace NotesApp.API.Services
 {
-    public class MailService : IMailService
+    public class MailService// : IMailService
     {
-        private IConfiguration _configuration;
+        private static IConfiguration _configuration;
 
         public MailService(IConfiguration configuration)
         {
             _configuration = configuration;
         }
 
-        public async Task SendEmailAsync(string toMail, string subject, string content)
+        public static async Task SendEmailAsync(string toMail, string subject, string content)
         {
             var apiKey = _configuration["SendGridAPIKey"];
 
