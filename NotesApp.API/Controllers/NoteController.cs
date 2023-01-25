@@ -8,6 +8,7 @@ using NotesApp.API.Services;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using System.Xml.XPath;
 
 namespace NotesApp.API.Controllers
 {
@@ -114,6 +115,42 @@ namespace NotesApp.API.Controllers
             catch (ArgumentNullException)
             {
                 return BadRequest("The id does not exist or is in a bad format.");
+            }
+        }
+
+        [HttpPut("{noteId}")]
+        public async Task<ActionResult> ChangeNote(string noteid, string userid, NoteForCreationDto note)
+        {
+            Guid userId = new Guid(userid);
+            Guid noteId = new Guid(noteid);
+            try
+            {
+                if(noteId == Guid.Empty)
+                {
+                    return BadRequest("The note id does not exist or is in a bad format.");
+                }
+                
+                if (!await _userRepository.UserExistsAsync(userId))
+                {
+                    return NotFound("User does not registered.");
+                }
+
+                var noteFromRepo = await _userRepository.GetNoteAsync(noteId, userId);
+
+                if (noteFromRepo == null)
+                {
+                    return BadRequest("Note dose not exist.");
+                }
+
+                _mapper.Map(note, noteFromRepo);
+                _userRepository.UpdateNote(noteFromRepo);
+                await _userRepository.SaveAsync();
+
+                return Ok("Note successfully edited.");
+            } 
+            catch(ArgumentNullException)
+            {
+                return BadRequest("The user id does not exist or is in a bad format.");
             }
         }
 

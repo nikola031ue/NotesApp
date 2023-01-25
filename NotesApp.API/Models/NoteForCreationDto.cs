@@ -14,6 +14,6 @@ namespace NotesApp.API.Models
 
         [Required(ErrorMessage = "Fill out a color.")]
         [MaxLength(10, ErrorMessage = " The color shouldn't have motre than 10 characters.")]
-        public string Color { get; set; } = "blue";
+        public string Color { get; set; } = "#00FFFF";
     }
 }

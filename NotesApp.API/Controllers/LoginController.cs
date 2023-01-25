@@ -1,7 +1,8 @@
 ﻿using AutoMapper;
-using Microsoft.AspNetCore.Authorization;
+using BCrypt.Net;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
+using Newtonsoft.Json.Linq;
 using NotesApp.API.Entities;
 using NotesApp.API.Helpers;
 using NotesApp.API.Models;
@@ -9,6 +10,7 @@ using NotesApp.API.Services;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Web;
 
 namespace NotesApp.API.Controllers
 {
@@ -32,8 +34,8 @@ namespace NotesApp.API.Controllers
         }
 
 
-        [HttpGet()]
-        public ActionResult LoginAsync([FromQuery] UserResourceParametersDto userResourceParameters)
+        [HttpPost]
+        public ActionResult LoginAsync([FromBody] UserResourceParametersDto userResourceParameters)
         {
             if (!MailValidator.IsValidEmail(userResourceParameters.Email))
             {
@@ -44,9 +46,9 @@ namespace NotesApp.API.Controllers
             {
                 var userFromRepo = _userRepository.GetUser(userResourceParameters);
 
-                if(userFromRepo == null)
+                if (userFromRepo == null)
                 {
-                    return NoContent();
+                    return NotFound();
                 }
 
                 var token = _jwtTokenManager.Authenticate(userResourceParameters.Email/*, userResourceParameters.Password*/);
@@ -54,40 +56,33 @@ namespace NotesApp.API.Controllers
                 {
                     return Unauthorized("Token error.");
                 }
-
-                if (PasswordHasher.HashPassword(userResourceParameters.Password) == userFromRepo.Password)
+;
+                string passwordHash = BCrypt.Net.BCrypt.HashPassword(userResourceParameters.Password, _configuration["salt"]);
+                if (BCrypt.Net.BCrypt.Verify(userResourceParameters.Password, userFromRepo.Password))
                 {
-                    return Ok("Token:  " + token + "  UserId:  " + userFromRepo.UserId);
+                    return Ok(new AuthResponseDto { IsAuthSuccessful = true, IsVerified = userFromRepo.Verified, Token = token, UserId = userFromRepo.UserId.ToString()});
                 }
 
-                return Ok("User does not exist.");
-                
+                return NotFound("User does not exist.");
+
             }
             catch (ArgumentNullException)
             {
                 return BadRequest("Fill in all the fields or wrong parameters.");
+            }
+            catch(SaltParseException)
+            {
+                return BadRequest("Salt exception");
             }
             catch (Exception)
             {
                 return BadRequest("Email or password are empty.");
             }
         }
+        
 
-        [HttpPost]
-        public async Task<ActionResult<UserDto>> CreateUserAsync(UserForCreationDto user)
-        {
-            return await CreatorOfUserAsync(user);
-        }
-
-        [HttpPost("{generate}")]
-        public async Task<ActionResult<UserDto>> CreateUserWithGeneratePasswordAsync(UserForCreationDto user)
-        {
-            user.Password = PasswordGenerator.GetRandomPassword();
-
-            return await CreatorOfUserAsync(user);
-        }
-
-        private async Task<ActionResult<UserDto>> CreatorOfUserAsync(UserForCreationDto user)
+        [HttpPost("register")]
+        public async Task<ActionResult<AuthResponseDto>> CreateUserAsync([FromBody] UserForCreationDto user)
         {
             if (!MailValidator.IsValidEmail(user.Email))
             {
@@ -98,20 +93,21 @@ namespace NotesApp.API.Controllers
 
             if (usersFromRepo.Any(x => x.Email.Equals(user.Email)))
             {
-                return BadRequest("Email already exist.");
+                return NotFound("Email already exist.");
             }
 
-            user.Password = PasswordHasher.HashPassword(user.Password);
+            user.Password = BCrypt.Net.BCrypt.HashPassword(user.Password, _configuration["salt"]);
 
             var userEntity = _mapper.Map<User>(user);
             await _userRepository.AddUser(userEntity);
             await _userRepository.SaveAsync();
 
             var userToReturn = _mapper.Map<UserDto>(userEntity);
-            return CreatedAtRoute("GetUser",
-                new { userId = userToReturn.Id },
-                userToReturn);
-
+            //return CreatedAtRoute("GetUser",
+            //    new { userId = userToReturn.Id },
+            //    userToReturn);
+            return new AuthResponseDto { IsAuthSuccessful = false, Token = null, UserId = userToReturn.Id.ToString() };
         }
+
     }
 }

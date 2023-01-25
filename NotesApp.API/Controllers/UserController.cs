@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using EllipticCurve.Utils;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
@@ -52,9 +53,11 @@ namespace NotesApp.API.Controllers
             }
         }
 
+        [AllowAnonymous]
         [HttpPost("{userId}/verification", Name = "UserVerification")]
-        public async Task<ActionResult> UserVerification(Guid userId)
+        public async Task<ActionResult> UserVerification(string userid)
         {
+            Guid userId = new Guid(userid);
             try
             {
                 if (!_userRepository.UserExists(userId))
@@ -101,10 +104,13 @@ namespace NotesApp.API.Controllers
         }
 
         [HttpPatch("{userId}/verify/{code}")]
-        public async Task<ActionResult> Verified(int code, Guid userId, JsonPatchDocument<UserForCreationDto> patchDocument)
+        public async Task<ActionResult> Verified(int code, string userid, JsonPatchDocument<UserForCreationDto> patchDocument)
         {
+            
             try
             {
+                Guid userId = new Guid(userid);
+                //int code = Int32.Parse(codeString);
                 if (!await _userRepository.UserExistsAsync(userId))
                 {
                     return NotFound("User is not registered.");
@@ -116,7 +122,7 @@ namespace NotesApp.API.Controllers
 
                 if (userFromRepo.Verified)
                 {
-                    return Ok("User already verified.");
+                    return NoContent();
                 }
 
                 if (code == verificationFromRepo.VerificationCode)
@@ -154,10 +160,11 @@ namespace NotesApp.API.Controllers
                 }
 
                 var userFromRepo = await _userRepository.GetUserAsync(userId);
-
+                //user.Password = BCrypt.Net.BCrypt.HashPassword(user.Password, _configuration["salt"]);
+                
                 var userToPatch = _mapper.Map<UserForCreationDto>(userFromRepo);
                 patchDocument.ApplyTo(userToPatch);
-
+                userToPatch.Password = BCrypt.Net.BCrypt.HashPassword(userToPatch.Password, _configuration["salt"]);
                 _mapper.Map(userToPatch, userFromRepo);
                 _userRepository.UpdateUser(userFromRepo);
                 await _userRepository.SaveAsync();

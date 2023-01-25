@@ -25,7 +25,7 @@ namespace NotesApp.API.Entities
         public string Email { get; set; }
 
         [Required]
-        [MaxLength(50)]
+        [MaxLength(100)]
         public string Password { get; set; }
 
         public bool Verified { get; set; } = false;
