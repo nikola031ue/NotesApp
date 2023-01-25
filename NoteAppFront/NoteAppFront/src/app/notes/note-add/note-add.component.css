@@ -1,0 +1,18 @@
+.createNote {
+  display: flex;
+  justify-content: center;
+}
+#cancel {
+  margin-left: 5px;
+}
+
+em {
+  float:right;
+  color:#E05C65;
+  padding-left:10px;
+}
+
+input[type="radio"] {
+  margin-right: 5px;
+}
+

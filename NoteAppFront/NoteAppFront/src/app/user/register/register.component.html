@@ -1,0 +1,57 @@
+<h1>Register</h1>
+<hr>
+<div class="register">
+  <div class="col-md-4">
+    <div *ngIf="showError" class="alert alert-danger" role="alert">
+      {{errorMessage}}
+    </div>
+    <form [formGroup]="registerForm" (ngSubmit)="registerUser(registerForm.value)" autocomplete="off" novalidate>
+      <div class="form-group">
+        <label for="firstName">First Name:</label>
+        <em *ngIf="validateControl('firstname') && hasError('firstname', 'required')">Required</em>
+        <input formControlName="firstname" name="firstname" required id="firstname" type="text" class="form-control"
+          placeholder="First Name..." />
+      </div><br>
+      <div class="form-group">
+        <label for="lastName">Last Name:</label>
+        <em *ngIf="validateControl('lastname') && hasError('lastname', 'required')">Required</em>
+        <input formControlName="lastname" name="lastname" required id="lastname" type="text" class="form-control"
+          placeholder="Last Name..." />
+      </div><br>
+      <div class="form-group">
+        <label for="email">Email:</label>
+        <em *ngIf="validateControl('email') && hasError('email', 'email')">Wrong email format</em>
+        <em *ngIf="validateControl('email') && hasError('email', 'required')">Required</em>
+        <input formControlName="email" name="email" required id="email" type="text" class="form-control"
+          placeholder="Email..." />
+      </div><br>
+      <div formGroupName="passwordGroup">
+        <div class="form-group">
+          <label for="password">Password:</label>
+          <em
+            *ngIf="validateControl('passwordGroup.password') && hasError('passwordGroup.password', 'minlength')">Password
+            must have at least 3 characters.</em>
+          <em *ngIf="validateControl('password') && hasError('password', 'required')">Required</em>
+          <input formControlName="password" name="password" required id="password" type="password" class="form-control"
+            placeholder="Password..." [ngClass]="{'is-invalid': registerForm.get('passwordGroup').errors ||
+          ((registerForm.get('passwordGroup.password').invalid ||
+            registerForm.get('passwordGroup.password').dirty) &&
+           !registerForm.get('passwordGroup.password').valid) }" />
+        </div><br>
+        <div class="form-group">
+          <label for="confirmPassword">Confirm Password:</label>
+          <em *ngIf="validateControl('confirmPassword') && hasError('confirmPassword', 'required')">Required</em>
+          <input formControlName="confirmPassword" name="confirmPassword" required id="confirmPassword" type="password"
+            class="form-control" placeholder="Confirm Password..." [ngClass]="{'is-invalid': registerForm.get('passwordGroup').errors ||
+          ((registerForm.get('passwordGroup.confirmPassword').invalid ||
+            registerForm.get('passwordGroup.confirmPassword').dirty) &&
+           !registerForm.get('passwordGroup.confirmPassword').valid) }" />
+        </div>
+      </div><br>
+      <br>
+      <button type="submit" [disabled]="registerForm.invalid" class="btn btn-primary">Register</button>
+      <button type="submit" id="cancel" (click)="cancel()" class="btn btn-secondary">Cancel</button>
+    </form>
+    <br>
+  </div>
+</div>

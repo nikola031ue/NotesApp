@@ -1,0 +1,18 @@
+<div class="verification">
+  <div class="col-md-4">
+    <div *ngIf="showError" class="alert alert-danger" role="alert">
+      {{errorMessage}}
+    </div>
+    <form [formGroup]="verificationForm" (ngSubmit)="verifyUser(verificationForm.value)" autocomplete="off" novalidate>
+      <div class="form-group">
+        <br><br>
+        <label for="verificationCode">Verification code:</label>
+        <em *ngIf="validateControl('code') && hasError('code', 'required')">Required</em>
+        <input formControlName="code" name="code" required id="code" type="number" class="form-control"
+          placeholder="Code..." />
+      </div>
+      <br>
+      <button type="submit" [disabled]="verificationForm.invalid" class="btn btn-primary">Verify</button>
+    </form>
+  </div>
+</div>

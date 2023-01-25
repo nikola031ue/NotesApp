@@ -1,0 +1,37 @@
+<h1>{{ titlePage }}</h1>
+<hr>
+<div class="createNote">
+  <div class="col-md-4">
+    <div *ngIf="showError" class="alert alert-danger" role="alert">
+      {{ errorMessage }}
+    </div>
+    <form [formGroup]="noteForm" (ngSubmit)="createNote(noteForm.value)" autocomplete="off" novalidate>
+      <div class="form-group">
+        <label for="title">Title:</label>
+        <em *ngIf="validateControl('title') && hasError('title', 'required')">Required</em>
+        <input formControlName="title" name="title" required id="title" type="text" class="form-control"
+          placeholder="Title...">
+      </div><br>
+      <div class="form-group">
+        <label for="content">Content:</label>
+        <em *ngIf="validateControl('content') && hasError('content', 'required')">Required</em>
+        <input formControlName="content" name="content" required id="content" type="text" class="form-control"
+          placeholder="Content...">
+      </div><br>
+      <div class="form-group">
+        <label for="color">Color:</label><br>
+        <input type="radio" id="red" formControlName="color" name="color" [value]="colors[0]" checked>
+        <label for="red">Red</label><br>
+        <input type="radio" id="blue" formControlName="color" name="color" [value]="colors[1]">
+        <label for="blue">Blue</label><br>
+        <input type="radio" id="yellow" formControlName="color" name="color" [value]="colors[2]">
+        <label for="yellow">Yellow</label>
+      </div><br>
+
+      <br>
+      <button type="submit" [disabled]="noteForm.invalid" class="btn btn-primary">{{ buttonName }}</button>
+      <button type="submit" id="cancel" (click)="cancel()" class="btn btn-secondary">Cancel</button>
+
+    </form>
+  </div>
+</div>
